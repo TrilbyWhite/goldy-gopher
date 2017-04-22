@@ -108,10 +108,11 @@ int gopherShowMenu(Gopher *gopher, int start, int end) {
 			default: printf("\033[31m%c%s\033[0m\n", gp->item, gp->string);
 		}
 	}
+	printf("\n");
 	return 0;
 }
 
-Gopher *gopherFollowLink(Gopher *gopher, int n, const char *cmd) {
+Gopher *gopherFollowLink(Gopher *gopher, int n, const char *args) {
 	if (n < 1) return gopher;
 	Gopher *gp;
 	for (gp = gopher; n && gp && gp->item; ++gp, --n);
@@ -120,7 +121,7 @@ Gopher *gopherFollowLink(Gopher *gopher, int n, const char *cmd) {
 	// TODO: check item type ...
 	char *host = strdup(gp->host);
 	int port = gp->port;
-	char *path, *args = strchr(cmd, ' ');
+	char *path;
 	if (args) asprintf(&path, "%s\t%s", gp->path, (++args));
 	else path = strdup(gp->path);
 	gopherFree(&gopher);
