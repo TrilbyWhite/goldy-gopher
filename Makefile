@@ -1,12 +1,30 @@
 
 PROG     =  gopher
+VER      =  0.1a
 CC       ?= gcc
+CFLAGS   +=
 LDLIBS   += -lreadline
 PREFIX   ?= /usr
+MODULES  =  gopher protocol
+HEADERS  =  protocol.h
+MANPAGES =
+VPATH    =  src
 
-all: ${PROG}
+${PROG}: ${MODULES:%=%.o}
+
+%.o: %.c ${HEADERS}
+
+install: ${PROG}
+	@install -Dm755 ${PROG} ${DESTDIR}${PREFIX}/bin/${PROG}
 
 clean:
-	@rm ${PROG}
+	@rm -f ${PROG}-${VER}.tar.gz
+	@rm -f ${MODULES:%=%.o}
 
-.PHONY: clean
+distclean: clean
+	@rm -f ${PROG}
+
+dist: distclean
+	@tar -czf ${PROG}-${VER}.tar.gz *
+
+.PHONY: clean dist distclean man
