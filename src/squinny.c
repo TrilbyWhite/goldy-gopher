@@ -100,11 +100,11 @@ Gopher *parseCommand(Gopher *gopher, char *cmd) {
 }
 
 int main(int argc, char *const *argv) {
-	Gopher *gopher;
+	Gopher *gopher = NULL;
 	int i;
 	char *cmd;
 	for (cmd = argv[i=1]; i < argc; cmd = argv[++i])
-		parseCommand(NULL, cmd);
+		gopher = parseCommand(gopher, cmd);
 	rl_completion_entry_function = generator;
 	while ((cmd=readline(">> "))) {
 		gopher = parseCommand(gopher, cmd);

@@ -1,11 +1,11 @@
 
-PROG     =  gopher
+PROG     =  squinny
 VER      =  0.1a
 CC       ?= gcc
 CFLAGS   +=
 LDLIBS   += -lreadline
 PREFIX   ?= /usr
-MODULES  =  gopher protocol
+MODULES  =  squinny protocol
 HEADERS  =  protocol.h
 MANPAGES =
 VPATH    =  src
