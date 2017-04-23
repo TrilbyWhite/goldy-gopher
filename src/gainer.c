@@ -106,11 +106,12 @@ int serve_file(int wfd, const char *path) {
 
 int service(int fd) {
 	int n;
-	char buf[256];
+	char buf[256], *ptr;
 	memset(buf, 0, 256);
 	if ((n=read(fd,buf,255)) < 0)
 		error(1, errno, "read");
-	buf[255] = 0;
+	buf[n] = 0;
+	if ((ptr=strpbrk(buf,"\r\n"))) *ptr = 0;
 	char path[PATH_MAX], tpath[PATH_MAX], *doc;
 	snprintf(tpath, PATH_MAX - 1, "%s/%s", docroot, buf);
 	realpath(tpath, path);
@@ -122,7 +123,7 @@ int service(int fd) {
 	struct stat info;
 	if (stat(path, &info) != 0) {
 		write(fd, notfound, sizeof(notfound));
-		error(0, errno, "serve");
+		error(0, errno, "service");
 	}
 	else if (S_ISDIR(info.st_mode)) serve_dir(fd, path);
 	else if (S_ISREG(info.st_mode)) serve_file(fd, path);
