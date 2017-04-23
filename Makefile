@@ -10,12 +10,16 @@ HEADERS  =  config.h protocol.h
 MANPAGES =
 VPATH    =  src
 
+all: ${PROG} server
+
 ${PROG}: ${MODULES:%=%.o}
 
 %.o: %.c ${HEADERS}
 
+server: gainer
+
 gainer: gainer.c
-	@$(CC) -o gainer $(CFLAGS) src/gainer.c $(LDFLAGS)
+	@$(CC) -o gainer $(CFLAGS) src/gainer.c -lmagic $(LDFLAGS)
 
 install: ${PROG}
 	@install -Dm755 ${PROG} ${DESTDIR}${PREFIX}/bin/${PROG}
@@ -25,9 +29,9 @@ clean:
 	@rm -f ${MODULES:%=%.o}
 
 distclean: clean
-	@rm -f ${PROG} server
+	@rm -f ${PROG} gainer
 
 dist: distclean
 	@tar -czf ${PROG}-${VER}.tar.gz *
 
-.PHONY: clean dist distclean man
+.PHONY: clean dist distclean man server
