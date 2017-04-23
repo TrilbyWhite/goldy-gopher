@@ -6,10 +6,14 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "protocol.h"
+#include "config.h"
 
 static Gopher *cmdBack(Gopher *, int, char *const *);
+static Gopher *cmdGo(Gopher *, int, char *const *);
+static Gopher *cmdHelp(Gopher *, int, char *const *);
 static Gopher *cmdLink(Gopher *, int, char *const *);
 static Gopher *cmdOpen(Gopher *, int, char *const *);
+static Gopher *cmdQuit(Gopher *, int, char *const *);
 static Gopher *cmdShow(Gopher *, int, char *const *);
 
 static Gopher *(*handler[]) (Gopher *, int, char *const *) = {
@@ -24,12 +28,17 @@ static Gopher *(*handler[]) (Gopher *, int, char *const *) = {
 	['8'] = cmdLink,
 	['9'] = cmdLink,
 	['B'] = cmdBack,
+	['G'] = cmdGo,
+	['H'] = cmdHelp,
 	['O'] = cmdOpen,
+	['Q'] = cmdQuit,
 	['S'] = cmdShow
 };
 static const struct { char *cmd, *args, *desription; } commands[] = {
 	{ "back", "", "TODO" },
+	{ "go", "host [path [port]]", "TODO" },
 	{ "open", "host [path [port]]", "TODO" },
+	{ "quit", "", "TODO" },
 	{ "show", "[start [end]]", "TODO" },
 	{ NULL, NULL, NULL }
 };
@@ -40,9 +49,26 @@ Gopher *cmdBack(Gopher *gopher, int argc, char *const *argv) {
 	return gopher;
 }
 
+Gopher *cmdGo(Gopher *gopher, int argc, char *const *argv) {
+	gopher = cmdOpen(gopher, argc, argv);
+	gopherShowMenu(gopher, 0, 0);
+	return gopher;
+}
+
+Gopher *cmdHelp(Gopher *gopher, int argc, char *const *argv) {
+	printf("Nothing here yet\n");
+	return gopher;
+}
+
 Gopher *cmdLink(Gopher *gopher, int argc, char *const *argv) {
-	// TODO paste  argv[1] + argv[2] + ...
-	gopher = gopherFollowLink(gopher, atoi(argv[0]), argv[1]);
+	// TODO paste  argv[1] + argv[2] + ... for search engines ...
+	if (!gopher) return gopher;
+	char *title = strdup(gopher->string);
+	gopher = gopherFollowLink(gopher, atoi(argv[0]), (argc > 1 ? argv[1] : NULL));
+	/* only show the menu if it's a new location */
+	if (auto_show_on_follow && strcmp(title, gopher->string))
+		gopherShowMenu(gopher, 0, 0);
+	free(title);
 	return gopher;
 }
 
@@ -52,7 +78,13 @@ Gopher *cmdOpen(Gopher *gopher, int argc, char *const *argv) {
 	if (argc == 2) gopher = gopherGet(argv[1], 70, "");
 	else if (argc == 3) gopher = gopherGet(argv[1], 70, argv[2]);
 	else if (argc == 4) gopher = gopherGet(argv[1], atoi(argv[3]), argv[2]);
-	gopherShowMenu(gopher, 0, 0);
+	return gopher;
+}
+
+Gopher *cmdQuit(Gopher *gopher, int argc, char *const *argv) {
+	/* if needed, create an empty gopher to carry the QUIT message back */
+	if (!gopher) gopher = calloc(2, sizeof(Gopher));
+	gopher->item = GOPHER_QUIT;
 	return gopher;
 }
 
@@ -66,7 +98,7 @@ Gopher *cmdShow(Gopher *gopher, int argc, char *const *argv) {
 }
 
 
-char *generator(const char *text, int state) {
+char *rl_generator(const char *text, int state) {
 	static int n, len;
 	if (!state) { n = -1; len = strlen(text); }
 	while (commands[++n].cmd)
@@ -77,8 +109,7 @@ char *generator(const char *text, int state) {
 
 Gopher *parseCommand(Gopher *gopher, char *cmd) {
 	if (cmd[0] == 0) return gopher;
-	char *c, *dup = strdup(cmd);
-	for (c = dup; *c; ++c) *c = toupper(*c);
+	char *dup = strdup(cmd);
 	int argc = 0;
 	char **argv = NULL, *argp;
 	argp = strtok(dup, " \t\n");
@@ -88,8 +119,8 @@ Gopher *parseCommand(Gopher *gopher, char *cmd) {
 		argp = strtok(NULL, " \t\n");
 	}
 	free(dup);
-	if (handler[**argv]) {
-		gopher = handler[**argv](gopher, argc, argv);
+	if (handler[toupper(**argv)]) {
+		gopher = handler[toupper(**argv)](gopher, argc, argv);
 		add_history(cmd);
 	}
 	else {
@@ -105,10 +136,11 @@ int main(int argc, char *const *argv) {
 	char *cmd;
 	for (cmd = argv[i=1]; i < argc; cmd = argv[++i])
 		gopher = parseCommand(gopher, cmd);
-	rl_completion_entry_function = generator;
-	while ((cmd=readline(">> "))) {
+	rl_completion_entry_function = rl_generator;
+	while ( (!gopher || gopher->item != GOPHER_QUIT) && (cmd=readline(prompt))	) {
 		gopher = parseCommand(gopher, cmd);
 		free(cmd);
 	}
+	if (gopher) gopherFree(&gopher);
 	return 0;
 }

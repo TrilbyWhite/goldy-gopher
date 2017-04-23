@@ -7,7 +7,16 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
+#define GOPHER_NULL	0
+#define GOPHER_START	2
+#define GOPHER_QUIT	4
+
+typedef unsigned char bool;
+
+enum { false = 0, true = 1 };
+
 typedef struct Gopher { char item, *string, *host, *path; int port; } Gopher;
+typedef struct Color { char *item, *str; } Color;
 
 int gopherFree(Gopher **);
 Gopher *gopherFollowLink(Gopher *, int, const char *);
