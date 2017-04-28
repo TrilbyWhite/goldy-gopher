@@ -3,12 +3,18 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "protocol.h"
 #include "config.h"
 
+#ifndef PREFIX
+#define PREFIX "/usr"
+#endif
+
 static Gopher *cmdBack(Gopher *, int, char *const *);
+static Gopher *cmdFind(Gopher *, int, char *const *);
 static Gopher *cmdGo(Gopher *, int, char *const *);
 static Gopher *cmdHelp(Gopher *, int, char *const *);
 static Gopher *cmdLink(Gopher *, int, char *const *);
@@ -28,24 +34,25 @@ static Gopher *(*handler[]) (Gopher *, int, char *const *) = {
 	['8'] = cmdLink,
 	['9'] = cmdLink,
 	['B'] = cmdBack,
+	['F'] = cmdFind,
 	['G'] = cmdGo,
 	['H'] = cmdHelp,
 	['O'] = cmdOpen,
 	['Q'] = cmdQuit,
 	['S'] = cmdShow
 };
-static const struct { char *cmd, *args, *desription; } commands[] = {
-	{ "back", "", "TODO" },
-	{ "go", "host [path [port]]", "TODO" },
-	{ "open", "host [path [port]]", "TODO" },
-	{ "quit", "", "TODO" },
-	{ "show", "[start [end]]", "TODO" },
-	{ NULL, NULL, NULL }
-};
-
 
 Gopher *cmdBack(Gopher *gopher, int argc, char *const *argv) {
-	// TODO implement history stack (here or in protocol??)
+	Gopher *goph = history(NULL, 0, NULL);
+	if (!goph) return gopher;
+	gopherFree(&gopher);
+	gopherShowMenu(goph, 0, 0);
+	return goph;
+}
+
+Gopher *cmdFind(Gopher *gopher, int argc, char *const *argv) {
+	// TODO direct query to Veronica...
+	printf("Find is not yet implemented\n");
 	return gopher;
 }
 
@@ -56,7 +63,9 @@ Gopher *cmdGo(Gopher *gopher, int argc, char *const *argv) {
 }
 
 Gopher *cmdHelp(Gopher *gopher, int argc, char *const *argv) {
-	printf("Nothing here yet\n");
+	gopherFree(&gopher);
+	gopher = gopherGet("file", 0, PREFIX "/share/help");
+	gopherShowMenu(gopher, 0, 0);
 	return gopher;
 }
 
@@ -67,7 +76,7 @@ Gopher *cmdLink(Gopher *gopher, int argc, char *const *argv) {
 	gopher = gopherFollowLink(gopher, atoi(argv[0]), (argc > 1 ? argv[1] : NULL));
 	/* only show the menu if it's a new location */
 	if (auto_show_on_follow && strcmp(title, gopher->string))
-		gopherShowMenu(gopher, 0, 0);
+		gopherShowMenu(gopher, 0, 0); // TODO get rid of auto_show and use max...
 	free(title);
 	return gopher;
 }
@@ -99,11 +108,12 @@ Gopher *cmdShow(Gopher *gopher, int argc, char *const *argv) {
 
 
 char *rl_generator(const char *text, int state) {
+	static const char *cmd[] = { "back", "find", "go", "help", "open", "quit", "show", NULL };
 	static int n, len;
 	if (!state) { n = -1; len = strlen(text); }
-	while (commands[++n].cmd)
-		if (!strncmp(commands[n].cmd, text, len))
-			return strdup(commands[n].cmd);
+	while (cmd[++n])
+		if (!strncmp(cmd[n], text, len))
+			return strdup(cmd[n]);
 	return NULL;
 }
 
@@ -127,20 +137,23 @@ Gopher *parseCommand(Gopher *gopher, char *cmd) {
 		printf("Command not found: %s\n", cmd);
 	}
 	while (argc) free(argv[--argc]);
+	free(argv);
 	return gopher;
 }
 
 int main(int argc, char *const *argv) {
 	Gopher *gopher = NULL;
 	int i;
-	char *cmd;
+	char *cmd = NULL;
+	size_t n = 0;
 	for (cmd = argv[i=1]; i < argc; cmd = argv[++i])
 		gopher = parseCommand(gopher, cmd);
 	rl_completion_entry_function = rl_generator;
-	while ( (!gopher || gopher->item != GOPHER_QUIT) && (cmd=readline(prompt))	) {
+	while ((!gopher || gopher->item != GOPHER_QUIT) && (cmd=readline(prompt))) {
 		gopher = parseCommand(gopher, cmd);
 		free(cmd);
 	}
 	if (gopher) gopherFree(&gopher);
+	history(NULL, -1, NULL);
 	return 0;
 }

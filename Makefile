@@ -1,37 +1,39 @@
 
-PROG     =  goldy
+CLIENT	=  goldy
+SERVER	=  gainer
 VER      =  0.1a
 CC       ?= gcc
 CFLAGS   +=
 LDLIBS   += -lreadline
 PREFIX   ?= /usr
+CPPFLAGS	+= -DPREFIX=\"$(PREFIX)\"
 MODULES  =  goldy protocol
 HEADERS  =  config.h protocol.h
-MANPAGES =
 VPATH    =  src
 
-all: ${PROG} server
+all: $(CLIENT) #$(SERVER)
 
-${PROG}: ${MODULES:%=%.o}
+$(CLIENT): $(MODULES:%=%.o)
 
-%.o: %.c ${HEADERS}
+%.o: %.c $(HEADERS)
 
-server: gainer
-
-gainer: gainer.c
+$(SERVER): $(SERVER).c
 	@$(CC) -o gainer $(CFLAGS) src/gainer.c -lmagic $(LDFLAGS)
 
-install: ${PROG}
-	@install -Dm755 ${PROG} ${DESTDIR}${PREFIX}/bin/${PROG}
+install: $(CLIENT) $(SERVER)
+	@install -Dm755 $(CLIENT) $(DESTDIR)$(PREFIX)/bin/$(CLIENT)
+	#@install -Dm755 $(SERVER) $(DESTDIR)$(PREFIX)/bin/$(SERVER)
+	@install -Dm644 -t $(DESTDIR)$(PREFIX)/share/$(CLIENT) share/*
+	@sed -i "s|%PREFIX%|$(PREFIX)|" $(DESTDIR)$(PREFIX)/share/$(CLIENT)/*
 
 clean:
-	@rm -f ${PROG}-${VER}.tar.gz
-	@rm -f ${MODULES:%=%.o}
+	@rm -f $(CLIENT)-$(VER).tar.gz
+	@rm -f $(MODULES:%=%.o)
 
 distclean: clean
-	@rm -f ${PROG} gainer
+	@rm -f $(CLIENT) $(SERVER)
 
 dist: distclean
-	@tar -czf ${PROG}-${VER}.tar.gz *
+	@tar -czf $(CLIENT)-$(VER).tar.gz *
 
 .PHONY: clean dist distclean man server

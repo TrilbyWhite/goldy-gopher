@@ -11,6 +11,8 @@
 #define GOPHER_START	2
 #define GOPHER_QUIT	4
 
+#define MAX_HIST		25
+
 typedef unsigned char bool;
 
 enum { false = 0, true = 1 };
@@ -21,7 +23,8 @@ typedef struct Color { char *item, *str; } Color;
 int gopherFree(Gopher **);
 Gopher *gopherFollowLink(Gopher *, int, const char *);
 Gopher *gopherGet(const char *, int, const char *);
-FILE *gopherOpen(const char *, int, const char *);
+int gopherOpen(const char *, int, const char *);
 int gopherShowMenu(Gopher *, int, int);
+Gopher *history(const char *, int, const char *);
 
 #endif /* __GOPHER_H__ */

@@ -11,14 +11,17 @@
 #include <error.h>
 #include <netdb.h>
 #include <dirent.h>
+#include <pwd.h>
 #include <magic.h>
+#include <grp.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
 static int serve_dir(int, const char *);
 static int serve_file(int, const char *);
 static int service(int);
-static int daemonize();
+//static int daemonize();
 static int init_socket();
 static int drop_privileges();
 
@@ -27,8 +30,8 @@ static const char notfound[] = "3Requested resource was not found\n.\n";
 static const char srverror[] = "3Server error: failed to access requested resource\n.\n";
 static const char _docroot[] = "/srv/gopher/";
 static const char *docroot = _docroot;
-static char _host[] = "localhost";
-static char *host = _host;
+static const char _host[] = "localhost";
+static const char *host = _host;
 
 static const char *type_map[] = {
 	"h text/html",
@@ -58,7 +61,6 @@ int serve_dir(int wfd, const char *path) {
 	const char *mime, *match;
 	magic_t m;
 	int i;
-	const char *base = path + strlen(docroot) - 1; // TODO check this...
 	/* open dir, init libmagic, read magic db - return error on any failure: */
 	if (!(dir=opendir(path)) || !(m=magic_open(MAGIC_MIME)) || magic_load(m, NULL)) {
 		if (m) magic_close(m);
@@ -66,7 +68,8 @@ int serve_dir(int wfd, const char *path) {
 		return 1;
 	}
 	// TODO include a ".." item?
-	//  -> append "/.." to path and put through realpath.
+	//  -> append "/.." to path and put through realpath?
+	//  or strrchr for last "/" and trim?
 	while ((de=readdir(dir))) {
 		if (de->d_name[0] == '.') continue;
 		if (stat(de->d_name, &info) < 0) continue;
@@ -82,7 +85,7 @@ int serve_dir(int wfd, const char *path) {
 		}
 		else continue;
 		/* print gopher line: */
-		dprintf(wfd, "%c%s\t%s/%s\t%s\t70\n", type, de->d_name, base, de->d_name, host);
+		dprintf(wfd, "%c%s\t%s/%s\t%s\t70\n", type, de->d_name, path, de->d_name, host);
 	}
 	magic_close(m);
 	return 0;
@@ -106,20 +109,12 @@ int serve_file(int wfd, const char *path) {
 
 int service(int fd) {
 	int n;
-	char buf[256], *ptr;
-	memset(buf, 0, 256);
-	if ((n=read(fd,buf,255)) < 0)
+	char path[256], *ptr;
+	memset(path, 0, 256);
+	path[0] = '/';
+	if ((n=read(fd,path+1,254)) < 0)
 		error(1, errno, "read");
-	buf[n] = 0;
-	if ((ptr=strpbrk(buf,"\r\n"))) *ptr = 0;
-	char path[PATH_MAX], tpath[PATH_MAX], *doc;
-	snprintf(tpath, PATH_MAX - 1, "%s/%s", docroot, buf);
-	realpath(tpath, path);
-	if (strncmp(path, docroot, strlen(docroot) - 1) != 0) {
-		write(fd, denied, sizeof(denied));
-		close(fd);
-		error(1, 0, "attempted access outside gopher root [selector=\"%s\"]", buf);
-	}
+	if ((ptr=strpbrk(path,"\t\r\n"))) *ptr = 0;
 	struct stat info;
 	if (stat(path, &info) != 0) {
 		write(fd, notfound, sizeof(notfound));
@@ -133,6 +128,8 @@ int service(int fd) {
 }
 
 
+/*
+ * Old habits die hard ... but this shouldn't be needed
 int daemonize() {
 	int pid;
 	if ((pid=fork()) < 0) error(1, errno, "daemonize");
@@ -145,6 +142,7 @@ int daemonize() {
 	chdir(docroot);
 	return 0;
 }
+*/
 
 int init_socket() {
 	int fd;
@@ -169,19 +167,53 @@ int drop_privileges() {
 #else
 #error This program is not yet safe to use as it does not drop root privileges! To test - at your own risk - define UNSAFE (e.g. gcc -DUNSAFE ...)
 #endif
+	/* the following code post-dates the above preprocessor error, but until this
+	 * receives 3rd party review the error and warning will remain in place.
+	 */
+	struct passwd *pw;
+	if (!(pw=getpwnam("http"))) error(1, errno, "drop 1");
+	if (chdir(docroot) != 0) error(1, errno, "drop 5");
+	if (chroot(docroot)) error(1, errno, "drop 6");
+	if (setgid(pw->pw_gid) != 0) error(1, errno, "drop 2");
+	if (initgroups(pw->pw_name, pw->pw_gid) != 0) error(1, errno, "drop 4");
+	if (setuid(pw->pw_uid) != 0) error(1, errno, "drop 3");
+	/*
+	if (	!(pw=getpwnam("http")) ||
+			(setgid(pw->pw_gid) != 0) ||
+			(setuid(pw->pw_uid) != 0) ||
+			(initgroups(pw->pw_name, pw->pw_gid) != 0) ||
+			(chdir(docroot) != 0) ||
+			(chroot(docroot)) )
+		error(1, errno, "drop_privieleges");
+	*/
 }
 
 
+static int running = 1;
+static void signal_handler(int sig) {
+	running = 0;
+}
+
 int main(int argc, const char **argv) {
+	/* TODO make args[] more flexible ... */
+//	if (argc != 3) return 1;
+//	host = argv[1];
+//	docroot = argv[2];
 	if (getuid() != 0)
 		error(1, 0, "must be run as root");
-	if (argc == 2) docroot = argv[1];
-	// TODO get host name
-	daemonize();
+	//daemonize();
 	int fd = init_socket();
 	drop_privileges();
+	/* load signal handler */
+	struct sigaction sa;
+	sa.sa_handler = signal_handler;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = SA_RESTART;
+	//if (sigaction(SIGINT, &sa, NULL) < 0) error(1, errno, "signal_handler");
+	//if (sigaction(SIGTERM, &sa, NULL) < 0) error(1, errno, "signal_handler");
+	/* listen for connections */
 	int client, pid;
-	for (;;) {
+	while (running) {
 		/* fork to service each incoming connection: */
 		if ((client=accept(fd,NULL,NULL)) < 0) error(1, errno, "accept");
 		if ((pid=fork()) < 0) error(1, errno, "fork");
