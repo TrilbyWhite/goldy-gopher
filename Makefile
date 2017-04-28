@@ -24,7 +24,7 @@ install: $(CLIENT) #$(SERVER)
 	@install -Dm755 $(CLIENT) $(DESTDIR)$(PREFIX)/bin/$(CLIENT)
 	#@install -Dm755 $(SERVER) $(DESTDIR)$(PREFIX)/bin/$(SERVER)
 	@install -Dm644 -t $(DESTDIR)$(PREFIX)/share/$(CLIENT) share/*
-	@sed -i "s|%PREFIX%|$(PREFIX)|" $(DESTDIR)$(PREFIX)/share/$(CLIENT)/*
+	@sed -i "s|%PREFIX%|$(PREFIX)/share/$(PROG)|" $(DESTDIR)$(PREFIX)/share/$(CLIENT)/*
 
 clean:
 	@rm -f $(CLIENT)-$(VER).tar.gz
