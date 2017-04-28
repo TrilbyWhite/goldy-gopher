@@ -4,16 +4,18 @@ pkgname="${_gitname}-git"
 pkgver=0
 pkgrel=1
 pkgdesc="A simple gopher client and server"
-url=""
+url="https://github.com/TrilbyWhite/goldy-gopher"
+source=("git+https://github.com/TrilbyWhite/${_gitname}.git")
 arch=('x86_64' 'i686')
 license=('GPL3')
 makedepends=('git')
-source=()
+sepends=('readline')
+source=("git+https://github.com/TrilbyWhite/${_gitname}.git")
 sha256sums=('SKIP')
 
 pkgver() {
 	cd "${_gitname}";
-	echo "4.$(git rev-list --count HEAD).$(git describe --always )"
+	echo "0.$(git rev-list --count HEAD).$(git describe --always )"
 }
 
 build() {
