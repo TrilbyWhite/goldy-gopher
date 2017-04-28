@@ -12,6 +12,9 @@
 #ifndef PREFIX
 #define PREFIX "/usr"
 #endif
+#ifndef PROG
+#define PROG "goldy"
+#endif
 
 static Gopher *cmdBack(Gopher *, int, char *const *);
 static Gopher *cmdFind(Gopher *, int, char *const *);
@@ -64,7 +67,7 @@ Gopher *cmdGo(Gopher *gopher, int argc, char *const *argv) {
 
 Gopher *cmdHelp(Gopher *gopher, int argc, char *const *argv) {
 	gopherFree(&gopher);
-	gopher = gopherGet("file", 0, PREFIX "/share/help");
+	gopher = gopherGet("file", 0, PREFIX "/share/" PROG "/help");
 	gopherShowMenu(gopher, 0, 0);
 	return gopher;
 }
