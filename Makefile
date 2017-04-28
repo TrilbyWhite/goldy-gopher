@@ -6,7 +6,7 @@ CC       ?= gcc
 CFLAGS   +=
 LDLIBS   += -lreadline
 PREFIX   ?= /usr
-CPPFLAGS	+= -DPREFIX=\"$(PREFIX)\"
+CPPFLAGS	+= -DPREFIX=\"$(PREFIX)\" -DPROG=\"$(PROG)\"
 MODULES  =  goldy protocol
 HEADERS  =  config.h protocol.h
 VPATH    =  src
