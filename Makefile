@@ -20,7 +20,7 @@ $(CLIENT): $(MODULES:%=%.o)
 $(SERVER): $(SERVER).c
 	@$(CC) -o gainer $(CFLAGS) src/gainer.c -lmagic $(LDFLAGS)
 
-install: $(CLIENT) $(SERVER)
+install: $(CLIENT) #$(SERVER)
 	@install -Dm755 $(CLIENT) $(DESTDIR)$(PREFIX)/bin/$(CLIENT)
 	#@install -Dm755 $(SERVER) $(DESTDIR)$(PREFIX)/bin/$(SERVER)
 	@install -Dm644 -t $(DESTDIR)$(PREFIX)/share/$(CLIENT) share/*
