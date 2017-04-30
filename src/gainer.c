@@ -146,7 +146,6 @@ int daemonize() {
 
 int init_socket() {
 	int fd;
-	struct hostent *server;
 	struct sockaddr_in serv_addr;
 	if ((fd=socket(AF_INET, SOCK_STREAM, 0)) < 0)
 		error(1, errno, "socket");
@@ -161,31 +160,18 @@ int init_socket() {
 }
 
 int drop_privileges() {
-	// TODO create gopher user + group
-#ifdef UNSAFE
-#warning This program is NOT SAFE to use as it does not drop root privileges! You are testing unsafe code, at your own risk.
-#else
-#error This program is not yet safe to use as it does not drop root privileges! To test - at your own risk - define UNSAFE (e.g. gcc -DUNSAFE ...)
-#endif
-	/* the following code post-dates the above preprocessor error, but until this
-	 * receives 3rd party review the error and warning will remain in place.
-	 */
+	// TODO create gopher user + group, then replace "http" with "gopher"
+#warning The method of dropping root privileges needs 3rd party review before it should be considered safe.
+#warning The user and group "http" will currently be used to serve files, this will change to "gopher" in an upcoming revision.
 	struct passwd *pw;
-	if (!(pw=getpwnam("http"))) error(1, errno, "drop 1");
-	if (chdir(docroot) != 0) error(1, errno, "drop 5");
-	if (chroot(docroot)) error(1, errno, "drop 6");
-	if (setgid(pw->pw_gid) != 0) error(1, errno, "drop 2");
-	if (initgroups(pw->pw_name, pw->pw_gid) != 0) error(1, errno, "drop 4");
-	if (setuid(pw->pw_uid) != 0) error(1, errno, "drop 3");
-	/*
-	if (	!(pw=getpwnam("http")) ||
-			(setgid(pw->pw_gid) != 0) ||
-			(setuid(pw->pw_uid) != 0) ||
-			(initgroups(pw->pw_name, pw->pw_gid) != 0) ||
-			(chdir(docroot) != 0) ||
-			(chroot(docroot)) )
-		error(1, errno, "drop_privieleges");
-	*/
+	if (	!(pw=getpwnam("http"))               ||
+			chdir(docroot)                       ||
+			chroot(docroot)                      ||
+			setgid(pw->pw_gid)                   ||
+			initgroups(pw->pw_name, pw->pw_gid)  ||
+			setuid(pw->pw_uid) )
+		error(1, errno, "drop 3");
+	return 0;
 }
 
 

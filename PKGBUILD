@@ -7,9 +7,9 @@ pkgdesc="A simple gopher client and server"
 url="https://github.com/TrilbyWhite/goldy-gopher"
 source=("git+https://github.com/TrilbyWhite/${_gitname}.git")
 arch=('x86_64' 'i686')
-license=('GPL3')
+license=('MIT')
 makedepends=('git')
-sepends=('readline')
+sepends=('libedit')
 source=("git+https://github.com/TrilbyWhite/${_gitname}.git")
 sha256sums=('SKIP')
 

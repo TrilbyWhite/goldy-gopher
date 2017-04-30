@@ -1,19 +1,25 @@
 
-#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include <unistd.h>
-#include <readline/readline.h>
-#include <readline/history.h>
+#include <ctype.h>
+#include <string.h>
+
+#ifdef USE_READLINE
+	#include <readline/readline.h>
+	#include <readline/history.h>
+#else
+	#include <editline/readline.h>
+#endif
+
 #include "protocol.h"
 #include "config.h"
 
 #ifndef PREFIX
-#define PREFIX "/usr"
+	#define PREFIX "/usr"
 #endif
 #ifndef PROG
-#define PROG "goldy"
+	#define PROG "goldy"
 #endif
 
 static Gopher *cmdBack(Gopher *, int, char *const *);
@@ -21,12 +27,14 @@ static Gopher *cmdFind(Gopher *, int, char *const *);
 static Gopher *cmdGo(Gopher *, int, char *const *);
 static Gopher *cmdHelp(Gopher *, int, char *const *);
 static Gopher *cmdLink(Gopher *, int, char *const *);
+static Gopher *cmdNull(Gopher *, int, char *const *);
 static Gopher *cmdOpen(Gopher *, int, char *const *);
 static Gopher *cmdQuit(Gopher *, int, char *const *);
 static Gopher *cmdShow(Gopher *, int, char *const *);
 
 static Gopher *(*handler[]) (Gopher *, int, char *const *) = {
 	['!'] = NULL,
+	['#'] = cmdNull,
 	['1'] = cmdLink,
 	['2'] = cmdLink,
 	['3'] = cmdLink,
@@ -46,7 +54,7 @@ static Gopher *(*handler[]) (Gopher *, int, char *const *) = {
 };
 
 Gopher *cmdBack(Gopher *gopher, int argc, char *const *argv) {
-	Gopher *goph = history(NULL, 0, NULL);
+	Gopher *goph = gopherHistory(NULL, 0, NULL);
 	if (!goph) return gopher;
 	gopherFree(&gopher);
 	gopherShowMenu(goph, 0, 0);
@@ -73,14 +81,21 @@ Gopher *cmdHelp(Gopher *gopher, int argc, char *const *argv) {
 }
 
 Gopher *cmdLink(Gopher *gopher, int argc, char *const *argv) {
-	// TODO paste  argv[1] + argv[2] + ... for search engines ...
+	if (argv[0][0] == 'l' || argv[0][0] == 'L') {
+		--argc;
+		++argv;
+	}
 	if (!gopher) return gopher;
 	char *title = strdup(gopher->string);
-	gopher = gopherFollowLink(gopher, atoi(argv[0]), (argc > 1 ? argv[1] : NULL));
+	gopher = gopherFollowLink(gopher, atoi(argv[0]), argc - 1, (argc > 1 ? &argv[1] : NULL));
 	/* only show the menu if it's a new location */
 	if (auto_show_on_follow && strcmp(title, gopher->string))
 		gopherShowMenu(gopher, 0, 0); // TODO get rid of auto_show and use max...
 	free(title);
+	return gopher;
+}
+
+Gopher *cmdNull(Gopher *gopher, int argc, char *const *argv) {
 	return gopher;
 }
 
@@ -148,7 +163,6 @@ int main(int argc, char *const *argv) {
 	Gopher *gopher = NULL;
 	int i;
 	char *cmd = NULL;
-	size_t n = 0;
 	for (cmd = argv[i=1]; i < argc; cmd = argv[++i])
 		gopher = parseCommand(gopher, cmd);
 	rl_completion_entry_function = rl_generator;
@@ -157,6 +171,6 @@ int main(int argc, char *const *argv) {
 		free(cmd);
 	}
 	if (gopher) gopherFree(&gopher);
-	history(NULL, -1, NULL);
+	gopherHistory(NULL, -1, NULL);
 	return 0;
 }

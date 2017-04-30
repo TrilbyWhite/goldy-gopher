@@ -21,10 +21,10 @@ typedef struct Gopher { char item, *string, *host, *path; int port; } Gopher;
 typedef struct Color { char *item, *str; } Color;
 
 int gopherFree(Gopher **);
-Gopher *gopherFollowLink(Gopher *, int, const char *);
+Gopher *gopherFollowLink(Gopher *, int, int, char *const *);
 Gopher *gopherGet(const char *, int, const char *);
+Gopher *gopherHistory(const char *, int, const char *);
 int gopherOpen(const char *, int, const char *);
 int gopherShowMenu(Gopher *, int, int);
-Gopher *history(const char *, int, const char *);
 
 #endif /* __GOPHER_H__ */
