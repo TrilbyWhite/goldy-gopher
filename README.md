@@ -61,7 +61,8 @@ passed PREFIX (default=/usr) and DESTDIR variables.
   any POSIX compliant libc implementation will be considered bugs - please
   report them.
 
-* Libedit: Can be replaced by GNU readline.  A conditional in the makefile
-  allows for `make GPL` to build this variant.  Any redistribution of the
-  realine variant would have to be licensed under the GPL.
+* Libedit: Can be replaced by GNU readline.  Commented lines in the Makefile can
+  be uncommented (and comment out the libedit line) to build a readline variant.
+  Any redistribution of the realine variant would have to be licensed under the
+  GPL.
 
