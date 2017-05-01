@@ -27,7 +27,6 @@ install: $(CLIENT) $(SERVER)
 	@install -Dm755 $(SERVER) $(DESTDIR)$(PREFIX)/bin/$(SERVER)
 	@install -Dm644 -t $(DESTDIR)$(PREFIX)/share/$(CLIENT) share/*
 	@sed -i "s|%PREFIX%|$(PREFIX)/share/$(CLIENT)|" $(DESTDIR)$(PREFIX)/share/$(CLIENT)/*
-	@install -Dm644 -t $(DESTDIR)$(PREFIX)/share/licenses/$(CLIENT) LICENSE
 
 clean:
 	@rm -f $(CLIENT)-$(VER).tar.gz
