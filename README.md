@@ -29,6 +29,12 @@ currently available which are as follows:
 	- info: (re)displays the current content from lines start to stop (inclusive)
 	- ex: head: "show 0 10" tail: "show -10 0" (negative offsets not implmented yet)
 
+In addition to the above, any command starting with a number follows the link to
+the specified line number.  Links / directories will be followed and text files
+will be displayed - any other file will be downloaded.  You can specify a
+download target filename as a parameter, or leave it blank to use the server's
+filename.
+
 ### Todo
 - Implement 'Find' command as an alias to a Veronica search
 - Replace auto_show_on_follow with a "max" length and pager integration
