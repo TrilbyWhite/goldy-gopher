@@ -54,8 +54,8 @@ no assurances of security.  Please review the code, specifically the
 
 ## Building
 
-Gold & Gainer depend on libc and libedit.  A Makefile is provided and can be
-passed PREFIX (default=/usr) and DESTDIR variables.
+Gold & Gainer depend on libc, libedit, and libmagic.  A Makefile is provided and
+can be passed PREFIX (default=/usr) and DESTDIR variables.
 
 * Libc: Builds have only been confirmed against glibc.  Errors building against
   any POSIX compliant libc implementation will be considered bugs - please
@@ -65,4 +65,6 @@ passed PREFIX (default=/usr) and DESTDIR variables.
   be uncommented (and comment out the libedit line) to build a readline variant.
   Any redistribution of the realine variant would have to be licensed under the
   GPL.
+
+* Libmagic: provided by the `file` utility.
 

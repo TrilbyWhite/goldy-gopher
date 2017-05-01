@@ -9,7 +9,7 @@ source=("git+https://github.com/TrilbyWhite/${_gitname}.git")
 arch=('x86_64' 'i686')
 license=('MIT')
 makedepends=('git')
-sepends=('libedit')
+depends=('file' 'libedit')
 source=("git+https://github.com/TrilbyWhite/${_gitname}.git")
 sha256sums=('SKIP')
 
