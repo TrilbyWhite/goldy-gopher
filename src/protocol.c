@@ -4,10 +4,11 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <error.h>
+#include <err.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netdb.h>
+
 #include "protocol.h"
 
 extern Color colors[];
@@ -108,22 +109,16 @@ int gopherOpen(const char *host, int port, const char *path) {
 		return open(path, O_RDONLY);
 	struct hostent *server;
 	struct sockaddr_in serv_addr;
-	if ((fd=socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		perror("gopherOpen");
-		return -1;
-	}
-	if (!(server=gethostbyname(host))) {
-		printf("gopherOpen: %s: Name not known\n", host);
-		return -1;
-	}
+	if ((fd=socket(AF_INET, SOCK_STREAM, 0)) < 0)
+		err(1, "gopherOpen");
+	if (!(server=gethostbyname(host)))
+		err(2, "gopherOpen (%s not known)", host);
 	memset(&serv_addr, 0, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
 	memcpy(&serv_addr.sin_addr.s_addr, server->h_addr, server->h_length);
 	serv_addr.sin_port = htons(port);
-	if (connect(fd,(struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-		perror("gopherOpen");
-		return -1;
-	}
+	if (connect(fd,(struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
+		err(3, "gopherOpen");
 	dprintf(fd, "%s\n",path);
 	return fd;
 }
@@ -151,7 +146,7 @@ int gopherTransfer(const char *host, int port, const char *path, int wfd) {
 	int n;
 	char buf[256];
 	while ((n=read(rfd,buf,255)) > 0)
-		if (write(wfd, buf, n) < 0) error(0, errno, "gopherTransfer");
+		if (write(wfd, buf, n) < 0) warn("gopherTransfer");
 	return 0;
 }
 
@@ -211,17 +206,17 @@ Gopher *gopherFollowLink(Gopher *gopher, int n, int argc, char *const *argv) {
 			/* all others, download */
 			if (argc && argv && argv[0]) { /* user supplied file name */
 				if ((wfd=open(argv[0],O_WRONLY|O_CREAT|O_EXCL,0644)) < 0)
-					error(0, errno, "download");
+					warn("download");
 				printf("download: saving to \"%s\" ... ", argv[0]);
 			}
 			else if ((ptr=strrchr(path,'/')) && ++ptr) { /* else take filename from server path */
 				if ((wfd=open(ptr,O_WRONLY|O_CREAT|O_EXCL,0644)) < 0)
-					error(0, errno, "download");
+					warn("download");
 				printf("download: saving to \"%s\" ... ", ptr);
 			}
 			else { /* else fallback to temp file */
 				if ((wfd=mkstemp(temp)) < 0)
-					error(0, errno, "download");
+					warn("download");
 				printf("download: saving to temporary file \"%s\" ... ", temp);
 			}
 			if (wfd > 0) {

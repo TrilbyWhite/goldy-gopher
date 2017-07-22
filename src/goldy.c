@@ -4,13 +4,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <string.h>
-
-#ifdef USE_READLINE
-	#include <readline/readline.h>
-	#include <readline/history.h>
-#else
-	#include <editline/readline.h>
-#endif
+#include <readline.h>
 
 #include "protocol.h"
 #include "config.h"

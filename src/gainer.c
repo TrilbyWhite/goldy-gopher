@@ -8,7 +8,7 @@
 #include <signal.h>
 #include <limits.h>
 #include <errno.h>
-#include <error.h>
+#include <err.h>
 #include <netdb.h>
 #include <dirent.h>
 #include <pwd.h>
@@ -48,7 +48,7 @@ int serve_dir(int wfd, const char *path) {
 	/* if "gophermap" exits, serve that instead of the dir listing: */
 	if (chdir(path) < 0) {
 		write(wfd, srverror, sizeof(srverror));
-		error(0, errno, "chdir [path=\"%s\"", path);
+		warn("chdir [path=\"%s\"", path);
 		return 1;
 	}
 	if (access("gophermap", R_OK) == 0)
@@ -96,14 +96,14 @@ int serve_file(int wfd, const char *path) {
 	if (!rfd) {
 		write(wfd, srverror, sizeof(srverror));
 		close(wfd);
-		error(1, errno, "serve_file");
+		err(1, "serve_file");
 	}
 	int n;
 	char buf[256];
 	while ((n=read(rfd,buf,255)) > 0)
-		if (write(wfd, buf, n) < 0) error(1, errno, "serve_file");
+		if (write(wfd, buf, n) < 0) err(10, "serve_file");
 	if (n < 0)
-		error(0, errno, "serve_file");
+		err(2, "serve_file");
 	return 0;
 }
 
@@ -113,12 +113,12 @@ int service(int fd) {
 	memset(path, 0, 256);
 	path[0] = '/';
 	if ((n=read(fd,path+1,254)) < 0)
-		error(1, errno, "read");
+		err(3, "read");
 	if ((ptr=strpbrk(path,"\t\r\n"))) *ptr = 0;
 	struct stat info;
 	if (stat(path, &info) != 0) {
 		write(fd, notfound, sizeof(notfound));
-		error(0, errno, "service");
+		warn("service");
 	}
 	else if (S_ISDIR(info.st_mode)) serve_dir(fd, path);
 	else if (S_ISREG(info.st_mode)) serve_file(fd, path);
@@ -148,13 +148,13 @@ int init_socket() {
 	int fd;
 	struct sockaddr_in serv_addr;
 	if ((fd=socket(AF_INET, SOCK_STREAM, 0)) < 0)
-		error(1, errno, "socket");
+		err(3,"socket");
 	memset(&serv_addr, 0, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
 	serv_addr.sin_port = htons(70);
 	if (bind(fd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0)
-		error(1, errno, "bind");
+		err(4,"bind");
 	listen(fd, 5); // TODO why 5?
 	return fd;
 }
@@ -170,7 +170,7 @@ int drop_privileges() {
 			setgid(pw->pw_gid)                   ||
 			initgroups(pw->pw_name, pw->pw_gid)  ||
 			setuid(pw->pw_uid) )
-		error(1, errno, "drop 3");
+		err(6,"drop");
 	return 0;
 }
 
@@ -186,7 +186,7 @@ int main(int argc, const char **argv) {
 //	host = argv[1];
 //	docroot = argv[2];
 	if (getuid() != 0)
-		error(1, 0, "must be run as root");
+		err(7,"must be run as root");
 	//daemonize();
 	int fd = init_socket();
 	drop_privileges();
@@ -201,8 +201,8 @@ int main(int argc, const char **argv) {
 	int client, pid;
 	while (running) {
 		/* fork to service each incoming connection: */
-		if ((client=accept(fd,NULL,NULL)) < 0) error(1, errno, "accept");
-		if ((pid=fork()) < 0) error(1, errno, "fork");
+		if ((client=accept(fd,NULL,NULL)) < 0) err(8, "accept");
+		if ((pid=fork()) < 0) err(9, "fork");
 		if (pid == 0) {
 			close(fd);
 			service(client);
